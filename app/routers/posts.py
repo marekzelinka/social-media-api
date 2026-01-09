@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, HTTPException, Path, Query, status
 from sqlmodel import select
 
-from app.dependencies import SessionDep
+from app.deps import SessionDep
 from app.models import Post, PostCreate, PostPublic, PostUpdate
 
 router = APIRouter(prefix="/posts", tags=["posts"])
