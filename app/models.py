@@ -5,6 +5,11 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
 
+# Generic message
+class Message(SQLModel):
+    message: str
+
+
 class UserBase(SQLModel):
     username: str = Field(unique=True, index=True)
     email: EmailStr = Field(unique=True, index=True)
@@ -74,3 +79,21 @@ class PostPublic(PostBase):
 
 class PostUpdate(SQLModel):
     published: bool | None = None
+
+
+class Vote(SQLModel, table=True):
+    user_id: uuid.UUID = Field(
+        foreign_key="user.id", ondelete="CASCADE", primary_key=True
+    )
+    post_id: uuid.UUID = Field(
+        foreign_key="post.id", ondelete="CASCADE", primary_key=True
+    )
+
+
+class VoteCreate(SQLModel):
+    post_id: uuid.UUID
+    dir: int = Field(ge=0, le=1)
+
+
+class VotePublic(VoteCreate):
+    pass
