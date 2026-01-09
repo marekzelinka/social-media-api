@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, status
 
 from app.config.db import create_db_and_tables
-from app.deps import SessionDep
-from app.routes import posts
+from app.dependencies import SessionDep
+from app.routers import posts
 
 
 @asynccontextmanager
