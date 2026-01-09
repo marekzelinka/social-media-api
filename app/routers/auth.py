@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import select
 
-from app.config.security import hash_password
-from app.deps import SessionDep
-from app.models import User, UserCreate, UserPublic
+from app.config.security import create_access_token, hash_password, verify_password
+from app.deps import CurrentUserDep, SessionDep
+from app.models import Token, User, UserCreate, UserPublic
 
 router = APIRouter(tags=["auth"])
 
@@ -28,3 +29,23 @@ async def register_user(*, session: SessionDep, user: Annotated[UserCreate, Body
     session.commit()
     session.refresh(new_user)
     return new_user
+
+
+@router.post("/token", status_code=status.HTTP_200_OK, response_model=Token)
+async def login_for_access_token(
+    *, session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+):
+    user = session.exec(select(User).where(User.username == form_data.username)).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = create_access_token(data={"sub": user.username})
+    return Token(access_token=access_token, token_type="bearer")
+
+
+@router.get("/users/me", response_model=UserPublic)
+async def read_users_me(current_user: CurrentUserDep):
+    return current_user
