@@ -10,7 +10,7 @@ from app.models import Post, PostCreate, PostPublic, PostUpdate
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
-@router.post("/", response_model=PostPublic, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostPublic)
 async def create_post(
     *,
     session: SessionDep,
