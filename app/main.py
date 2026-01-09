@@ -4,6 +4,7 @@ from fastapi import FastAPI, status
 
 from app.config.db import create_db_and_tables
 from app.deps import SessionDep
+from app.routes import posts
 
 
 @asynccontextmanager
@@ -13,6 +14,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Social Media API", lifespan=lifespan)
+
+app.include_router(posts.router)
 
 
 @app.get(
