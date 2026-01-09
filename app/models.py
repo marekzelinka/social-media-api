@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from pydantic import EmailStr
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class UserBase(SQLModel):
@@ -20,6 +20,8 @@ class User(UserBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)},
     )
+
+    posts: list[Post] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 class UserCreate(UserBase):
@@ -40,7 +42,7 @@ class Token(SQLModel):
 
 class PostBase(SQLModel):
     title: str = Field(index=True)
-    content: str | None = Field(default=None)
+    content: str
     published: bool = Field(default=True)
 
 
@@ -53,6 +55,9 @@ class Post(PostBase, table=True):
         sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)},
     )
 
+    owner_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
+    owner: User = Relationship(back_populates="posts")
+
 
 class PostCreate(PostBase):
     pass
@@ -64,8 +69,8 @@ class PostPublic(PostBase):
     created_at: datetime
     updated_at: datetime
 
+    owner_id: uuid.UUID
+
 
 class PostUpdate(SQLModel):
-    title: str | None = None
-    content: str | None = None
     published: bool | None = None

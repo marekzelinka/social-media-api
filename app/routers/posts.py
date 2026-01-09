@@ -2,7 +2,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, status
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.deps import CurrentUserDep, SessionDep
 from app.models import Post, PostCreate, PostPublic, PostUpdate
@@ -17,7 +17,7 @@ async def create_post(
     current_user: CurrentUserDep,
     post: Annotated[PostCreate, Body()],
 ):
-    db_post = Post.model_validate(post)
+    db_post = Post.model_validate(post, update={"owner_id": current_user.id})
     session.add(db_post)
     session.commit()
     session.refresh(db_post)
@@ -32,10 +32,13 @@ async def read_posts(
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
     published: Annotated[bool | None, Query()] = None,
+    search: Annotated[str | None, Query()] = None,
 ):
-    query = select(Post)
+    query = select(Post).where(Post.owner_id == current_user.id)
     if published:
         query = query.where(Post.published == published)
+    if search:
+        query = query.where(col(Post.title).icontains(search))
     posts = session.exec(query.offset(offset).limit(limit)).all()
     return posts
 
@@ -52,10 +55,14 @@ async def read_post(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
+    if post.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough premissions"
+        )
     return post
 
 
-@router.patch("/{post_id}", response_model=PostPublic)
+@router.put("/{post_id}", response_model=PostPublic)
 async def update_post(
     *,
     session: SessionDep,
@@ -68,8 +75,12 @@ async def update_post(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
-    post_data = post.model_dump(exclude_unset=True)
-    db_post.sqlmodel_update(post_data)
+    if db_post.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough premissions"
+        )
+    update_dict = post.model_dump(exclude_unset=True)
+    db_post.sqlmodel_update(update_dict)
     session.add(db_post)
     session.commit()
     session.refresh(db_post)
@@ -87,6 +98,10 @@ async def delete_post(
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
+    if post.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough premissions"
         )
     session.delete(post)
     session.commit()
