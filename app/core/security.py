@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from pwdlib import PasswordHash
 
-from app.config.config import config
+from app.core.config import config
 
 password_hash = PasswordHash.recommended()
 

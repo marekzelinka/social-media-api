@@ -5,11 +5,13 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 
-from app.config.db import engine
-from app.config.security import verify_token
+from app.core.db import engine
+from app.core.security import verify_token
 from app.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 
 def get_session() -> Generator[Session, None, None]:
@@ -23,18 +25,17 @@ SessionDep = Annotated[Session, Depends(get_session)]
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], session: SessionDep
 ) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid authentication credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     username = verify_token(token)
     if username is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise credentials_exception
     user = session.exec(select(User).where(User.username == username)).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise credentials_exception
     return user
 
 

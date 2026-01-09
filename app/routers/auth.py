@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import select
 
-from app.config.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.deps import CurrentUserDep, SessionDep
 from app.models import Token, User, UserCreate, UserPublic
 
