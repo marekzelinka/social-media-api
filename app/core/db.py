@@ -1,9 +1,8 @@
 from sqlmodel import SQLModel, create_engine
 
-from app.core.config import get_config
+from app.core.config import config
 
-DATABASE_URL = str(get_config().database_url)
-engine = create_engine(DATABASE_URL)
+engine = create_engine(str(config.database_url))
 
 
 def create_db_and_tables() -> None:

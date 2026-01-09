@@ -5,12 +5,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 
-from app.core.config import Settings, get_config
 from app.core.db import engine
 from app.core.security import verify_token
 from app.models import User
-
-ConfigDep = Annotated[Settings, Depends(get_config)]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
