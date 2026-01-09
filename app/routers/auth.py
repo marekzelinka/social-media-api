@@ -22,9 +22,10 @@ async def register_user(*, session: SessionDep, user: Annotated[UserCreate, Body
             detail="Username already registered",
         )
     hashed_password = hash_password(user.password)
-    user_data = user.model_dump()
-    user_data["hashed_password"] = hashed_password
-    new_user = User.model_validate(user_data)
+    user_dict = user.model_dump()
+    new_user = User.model_validate(
+        user_dict, update={"hashed_password": hashed_password}
+    )
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
