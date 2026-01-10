@@ -53,11 +53,10 @@ async def read_posts(
     return results
 
 
-@router.get("/{post_id}", response_model=PostPublic)
+@router.get("/{post_id}", response_model=PostPublicWithVotes)
 async def read_post(
     *,
     session: SessionDep,
-    current_user: CurrentUserDep,
     post_id: Annotated[uuid.UUID, Path()],
 ):
     post = session.get(Post, post_id)
@@ -65,11 +64,13 @@ async def read_post(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
         )
-    if post.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough premissions"
-        )
-    return post
+    results = session.exec(
+        select(Post, func.count(Vote.post_id).label("votes"))
+        .join(Vote, Vote.post_id == Post.id, isouter=True)
+        .where(Post.id == post_id)
+        .group_by(Post.id)
+    ).first()
+    return results
 
 
 @router.put("/{post_id}", response_model=PostPublic)
