@@ -77,6 +77,11 @@ class PostPublic(PostBase):
     owner_id: uuid.UUID
 
 
+class PostPublicWithVotes(SQLModel):
+    Post: PostPublic
+    votes: int
+
+
 class PostUpdate(SQLModel):
     published: bool | None = None
 
@@ -93,7 +98,3 @@ class Vote(SQLModel, table=True):
 class VoteCreate(SQLModel):
     post_id: uuid.UUID
     dir: int = Field(ge=0, le=1)
-
-
-class VotePublic(VoteCreate):
-    pass

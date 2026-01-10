@@ -2,10 +2,17 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, status
-from sqlmodel import col, select
+from sqlmodel import col, func, select
 
 from app.deps import CurrentUserDep, SessionDep
-from app.models import Post, PostCreate, PostPublic, PostUpdate
+from app.models import (
+    Post,
+    PostCreate,
+    PostPublic,
+    PostPublicWithVotes,
+    PostUpdate,
+    Vote,
+)
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -24,7 +31,7 @@ async def create_post(
     return db_post
 
 
-@router.get("/", response_model=list[PostPublic])
+@router.get("/", response_model=list[PostPublicWithVotes])
 async def read_posts(
     *,
     session: SessionDep,
@@ -34,13 +41,18 @@ async def read_posts(
     published: Annotated[bool | None, Query()] = None,
     search: Annotated[str | None, Query()] = None,
 ):
-    query = select(Post).where(Post.owner_id == current_user.id)
+    query = (
+        select(Post, func.count(Vote.post_id).label("votes"))
+        .join(Vote, Vote.post_id == Post.id, isouter=True)
+        .where(Post.owner_id == current_user.id)
+        .group_by(Post.id)
+    )
     if published:
         query = query.where(Post.published == published)
     if search:
         query = query.where(col(Post.title).icontains(search))
-    posts = session.exec(query.offset(offset).limit(limit)).all()
-    return posts
+    results = session.exec(query.offset(offset).limit(limit)).all()
+    return results
 
 
 @router.get("/{post_id}", response_model=PostPublic)
