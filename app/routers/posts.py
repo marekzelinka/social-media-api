@@ -35,7 +35,6 @@ async def create_post(
 async def read_posts(
     *,
     session: SessionDep,
-    current_user: CurrentUserDep,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
     published: Annotated[bool | None, Query()] = None,
@@ -44,7 +43,6 @@ async def read_posts(
     query = (
         select(Post, func.count(Vote.post_id).label("votes"))
         .join(Vote, Vote.post_id == Post.id, isouter=True)
-        .where(Post.owner_id == current_user.id)
         .group_by(Post.id)
     )
     if published:
