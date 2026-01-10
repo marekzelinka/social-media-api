@@ -1,19 +1,9 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, status
 
-from app.core.db import create_db_and_tables
 from app.deps import SessionDep
 from app.routers import auth, posts, votes
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    create_db_and_tables()
-    yield
-
-
-app = FastAPI(title="Social Media API", lifespan=lifespan)
+app = FastAPI(title="Social Media API", version="1.0.0")
 
 app.include_router(auth.router)
 app.include_router(posts.router)
