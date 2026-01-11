@@ -20,6 +20,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    test_database_url: PostgresDsn | None
     database_url: PostgresDsn
     secret_key: str
     access_token_expire_minutes: int
