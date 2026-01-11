@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -14,7 +14,9 @@ router = APIRouter(tags=["auth"])
 @router.post(
     "/register", status_code=status.HTTP_201_CREATED, response_model=UserPublic
 )
-async def register_user(*, session: SessionDep, user: Annotated[UserCreate, Body()]):
+async def register_user(
+    *, session: SessionDep, user: Annotated[UserCreate, Body()]
+) -> Any:
     db_user = session.exec(select(User).where(User.username == user.username)).first()
     if db_user:
         raise HTTPException(
@@ -35,7 +37,7 @@ async def register_user(*, session: SessionDep, user: Annotated[UserCreate, Body
 @router.post("/token", status_code=status.HTTP_200_OK, response_model=Token)
 async def login_for_access_token(
     *, session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-):
+) -> Token:
     user = session.exec(select(User).where(User.username == form_data.username)).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -48,5 +50,5 @@ async def login_for_access_token(
 
 
 @router.get("/users/me", response_model=UserPublic)
-async def read_users_me(*, current_user: CurrentUserDep):
+async def read_users_me(*, current_user: CurrentUserDep) -> Any:
     return current_user

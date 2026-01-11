@@ -15,7 +15,7 @@ def add_or_remove_vote(
     session: SessionDep,
     current_user: CurrentUserDep,
     vote: Annotated[VoteCreate, Body()],
-):
+) -> Message:
     post = session.get(Post, vote.post_id)
     if not post:
         raise HTTPException(

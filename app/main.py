@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -28,6 +30,7 @@ app.include_router(votes.router)
     tags=["status"],
     summary="Perform a Health Check",
     status_code=status.HTTP_200_OK,
+    response_model=dict[str, str],
 )
-async def read_health(*, session: SessionDep):
+async def read_health(*, _session: SessionDep) -> Any:
     return {"status": "ok"}

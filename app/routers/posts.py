@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, status
 from sqlmodel import col, func, select
@@ -23,7 +23,7 @@ async def create_post(
     session: SessionDep,
     current_user: CurrentUserDep,
     post: Annotated[PostCreate, Body()],
-):
+) -> Any:
     db_post = Post.model_validate(post, update={"owner_id": current_user.id})
     session.add(db_post)
     session.commit()
@@ -39,7 +39,7 @@ async def read_posts(
     limit: Annotated[int, Query(gt=0)] = 100,
     published: Annotated[bool | None, Query()] = None,
     search: Annotated[str | None, Query()] = None,
-):
+) -> Any:
     query = (
         select(Post, func.count(Vote.post_id).label("votes"))
         .join(Vote, Vote.post_id == Post.id, isouter=True)
@@ -58,7 +58,7 @@ async def read_post(
     *,
     session: SessionDep,
     post_id: Annotated[uuid.UUID, Path()],
-):
+) -> Any:
     post = session.get(Post, post_id)
     if not post:
         raise HTTPException(
@@ -80,7 +80,7 @@ async def update_post(
     current_user: CurrentUserDep,
     post_id: Annotated[uuid.UUID, Path()],
     post: Annotated[PostUpdate, Body()],
-):
+) -> Any:
     db_post = session.get(Post, post_id)
     if not db_post:
         raise HTTPException(
@@ -104,7 +104,7 @@ async def delete_post(
     session: SessionDep,
     current_user: CurrentUserDep,
     post_id: Annotated[uuid.UUID, Path()],
-):
+) -> None:
     post = session.get(Post, post_id)
     if not post:
         raise HTTPException(
@@ -116,3 +116,4 @@ async def delete_post(
         )
     session.delete(post)
     session.commit()
+    return None

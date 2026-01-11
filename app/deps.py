@@ -14,7 +14,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 
-def get_session() -> Generator[Session, None, None]:
+def get_session() -> Generator[Session]:
     with Session(engine) as session:
         yield session
 
