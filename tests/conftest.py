@@ -1,5 +1,5 @@
+import uuid
 from collections.abc import Generator, Sequence
-from typing import Any
 
 import pytest
 from alembic.config import Config, command
@@ -48,32 +48,31 @@ def client_fixture(session: Session) -> Generator[TestClient]:
     app.dependency_overrides.clear()
 
 
+class _TestDBUser(UserCreate):
+    """Models a user saved in db for testing."""
+
+    id: uuid.UUID
+
+
 @pytest.fixture
-def db_user(session: Session) -> dict[str, Any]:
-    user = UserCreate.model_validate(
-        {
-            "username": "hello123",
-            "email": "hello123@gmail.com",
-            "password": "password123",
-        }
-    )
-    hashed_password = hash_password(user.password)
-    user_dict = user.model_dump()
-    new_user = User.model_validate(
-        user_dict, update={"hashed_password": hashed_password}
+def db_user(session: Session) -> _TestDBUser:
+    password = "password123"
+    hashed_password = hash_password(password)
+    new_user = User(
+        username="hello123", email="hello123@gmail.com", hashed_password=hashed_password
     )
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
-    return {**user_dict, "id": new_user.id}
+    return _TestDBUser(**new_user.model_dump(), password=password)
 
 
 @pytest.fixture
-def db_posts(session: Session, db_user: dict[str, Any]) -> Sequence[Post]:
+def db_posts(session: Session, db_user: _TestDBUser) -> Sequence[Post]:
     posts_data = [
-        {"title": "first title", "content": "first content", "owner_id": db_user["id"]},
-        {"title": "2nd title", "content": "2nd content", "owner_id": db_user["id"]},
-        {"title": "3rd title", "content": "3rd content", "owner_id": db_user["id"]},
+        {"title": "first title", "content": "first content", "owner_id": db_user.id},
+        {"title": "2nd title", "content": "2nd content", "owner_id": db_user.id},
+        {"title": "3rd title", "content": "3rd content", "owner_id": db_user.id},
     ]
     posts: Sequence[Post] = [Post.model_validate(post) for post in posts_data]
     session.add_all(posts)
@@ -83,7 +82,7 @@ def db_posts(session: Session, db_user: dict[str, Any]) -> Sequence[Post]:
 
 
 @pytest.fixture
-def token_headers(db_user: dict[str, Any]) -> dict[str, str]:
-    access_token = create_access_token(data={"sub": db_user["username"]})
+def token_headers(db_user: _TestDBUser) -> dict[str, str]:
+    access_token = create_access_token(data={"sub": db_user.username})
     headers = {"Authorization": f"Bearer {access_token}"}
     return headers

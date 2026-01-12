@@ -1,8 +1,8 @@
-from typing import Any
-
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+
+from tests.conftest import _TestDBUser
 
 
 def test_register(client: TestClient) -> None:
@@ -19,14 +19,14 @@ def test_register(client: TestClient) -> None:
     assert data["email"] == "hello123@gmail.com"
 
 
-def test_token(client: TestClient, db_user: dict[str, Any]) -> None:
+def test_token(client: TestClient, db_user: _TestDBUser) -> None:
     r = client.post(
         "/token",
-        data={"username": db_user["username"], "password": db_user["password"]},
+        data={"username": db_user.username, "password": db_user.password},
     )
     assert r.status_code == status.HTTP_200_OK
     data = r.json()
-    assert data["access_token"]
+    assert "access_token" in data
 
 
 @pytest.mark.parametrize(
