@@ -51,3 +51,34 @@ def test_token(client: TestClient, user: UserCreate) -> None:
     assert r.status_code == status.HTTP_200_OK
     data = r.json()
     assert data["access_token"]
+
+
+@pytest.mark.parametrize(
+    "username, password, status_code",
+    [
+        # Wrong email with a valid password should return 403
+        ("wrongemail", "password123", status.HTTP_401_UNAUTHORIZED),
+        # Valid email with wrong password should return 403
+        ("hello123", "wrong_password", status.HTTP_401_UNAUTHORIZED),
+        # Both email and password are incorrect; should return 403
+        ("wrongemail", "wrong_password", status.HTTP_401_UNAUTHORIZED),
+        # Missing email should fail schema validatiion and return 422
+        (None, "wrong_password", status.HTTP_422_UNPROCESSABLE_CONTENT),
+        # Missing password should fail schema validatiion and return 422
+        ("hello123", None, status.HTTP_422_UNPROCESSABLE_CONTENT),
+    ],
+)
+def test_incorrect_token(
+    client: TestClient, username: str, password: str, status_code: int
+) -> None:
+    r = client.post(
+        "/token",
+        data={
+            "username": username,
+            "password": password,
+        },
+    )
+    assert r.status_code == status_code
+    if status_code == status.HTTP_401_UNAUTHORIZED:
+        data = r.json()
+        assert "access_token" not in data
