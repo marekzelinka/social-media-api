@@ -1,29 +1,8 @@
+from typing import Any
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel import Session
-
-from app.core.security import hash_password
-from app.models import User, UserCreate
-
-
-@pytest.fixture
-def user(session: Session) -> UserCreate:
-    user = UserCreate.model_validate(
-        {
-            "username": "hello123",
-            "email": "hello123@gmail.com",
-            "password": "password123",
-        }
-    )
-    hashed_password = hash_password(user.password)
-    user_dict = user.model_dump()
-    new_user = User.model_validate(
-        user_dict, update={"hashed_password": hashed_password}
-    )
-    session.add(new_user)
-    session.commit()
-    return user
 
 
 def test_register(client: TestClient) -> None:
@@ -40,13 +19,10 @@ def test_register(client: TestClient) -> None:
     assert data["email"] == "hello123@gmail.com"
 
 
-def test_token(client: TestClient, user: UserCreate) -> None:
+def test_token(client: TestClient, db_user: dict[str, Any]) -> None:
     r = client.post(
         "/token",
-        data={
-            "username": user.username,
-            "password": user.password,
-        },
+        data={"username": db_user["username"], "password": db_user["password"]},
     )
     assert r.status_code == status.HTTP_200_OK
     data = r.json()
@@ -73,10 +49,7 @@ def test_incorrect_token(
 ) -> None:
     r = client.post(
         "/token",
-        data={
-            "username": username,
-            "password": password,
-        },
+        data={"username": username, "password": password},
     )
     assert r.status_code == status_code
     if status_code == status.HTTP_401_UNAUTHORIZED:
