@@ -75,7 +75,7 @@ def db_posts(session: Session, db_user: dict[str, Any]) -> Sequence[Post]:
         {"title": "2nd title", "content": "2nd content", "owner_id": db_user["id"]},
         {"title": "3rd title", "content": "3rd content", "owner_id": db_user["id"]},
     ]
-    posts = [Post.model_validate(post) for post in posts_data]
+    posts: Sequence[Post] = [Post.model_validate(post) for post in posts_data]
     session.add_all(posts)
     session.commit()
     posts = session.exec(select(Post)).all()
