@@ -4,6 +4,7 @@ from collections.abc import Generator, Sequence
 import pytest
 from alembic.config import Config, command
 from fastapi.testclient import TestClient
+from httpx import Headers
 from sqlalchemy import Engine
 from sqlmodel import Session, create_engine, select
 
@@ -82,7 +83,6 @@ def db_posts(session: Session, db_user: _TestDBUser) -> Sequence[Post]:
 
 
 @pytest.fixture
-def token_headers(db_user: _TestDBUser) -> dict[str, str]:
+def token_headers(db_user: _TestDBUser) -> Headers:
     access_token = create_access_token(data={"sub": db_user.username})
-    headers = {"Authorization": f"Bearer {access_token}"}
-    return headers
+    return Headers({"Authorization": f"Bearer {access_token}"})
