@@ -22,9 +22,7 @@ def get_session() -> Generator[Session]:
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], session: SessionDep
-) -> User:
+async def get_current_user(token: TokenDep, session: SessionDep) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid authentication credentials",
